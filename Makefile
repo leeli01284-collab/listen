@@ -88,7 +88,10 @@ docker-down:
 # Utility Commands
 clean:
 	@echo "Cleaning build artifacts..."
-	find . -name "target" -type d -exec rm -rf {} + 2>/dev/null || true
-	find . -name "dist" -type d -exec rm -rf {} + 2>/dev/null || true
-	find . -name "node_modules" -type d -exec rm -rf {} + 2>/dev/null || true
+	cd listen-engine && cargo clean
+	cd listen-data && cargo clean
+	cd listen-adapter && cargo clean
+	cd listen-interface && rm -rf dist node_modules
+	cd listen-landing && rm -rf dist node_modules
+	cd listen-miniapp && rm -rf dist node_modules
 	@echo "Clean complete!"

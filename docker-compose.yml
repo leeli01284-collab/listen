@@ -62,6 +62,8 @@ services:
       nofile:
         soft: 65536
         hard: 65536
+    # Redis configured for performance: no persistence, 1GB max memory with LRU eviction
+    # For production, consider moving to a redis.conf file for better maintainability
     command: redis-server /usr/local/etc/redis/redis.conf --save "" --appendonly no --maxmemory 1gb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]

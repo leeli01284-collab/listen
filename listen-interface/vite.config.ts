@@ -67,6 +67,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
+        // Split vendor bundles for better caching and parallel loading
+        // Dependencies are grouped by usage patterns to optimize bundle sizes
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
           'solana-vendor': ['@solana/web3.js', '@solana/spl-token'],
