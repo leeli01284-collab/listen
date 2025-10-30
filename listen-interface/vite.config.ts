@@ -65,6 +65,17 @@ export default defineConfig({
     minify: "esbuild",
     sourcemap: false,
     chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'solana-vendor': ['@solana/web3.js', '@solana/spl-token'],
+          'router-vendor': ['@tanstack/react-router', '@tanstack/react-query'],
+          'ui-vendor': ['framer-motion', 'react-icons'],
+          'chart-vendor': ['lightweight-charts', 'scichart', 'scichart-react'],
+        }
+      }
+    }
   },
   server: {
     fs: {
