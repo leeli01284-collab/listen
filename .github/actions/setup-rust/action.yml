@@ -1,12 +1,73 @@
 name: 'Setup Rust Environment'
 description: 'Composite action to setup Rust build environment with caching and Protoc'
+
+inputs:
+  protoc-version:
+    description: 'Version of Protoc to install (e.g., "3.20.3", "latest")'
+    required: false
+    default: 'latest'
+  cache-enabled:
+    description: 'Enable cargo caching'
+    required: false
+    default: 'true'
+  rust-toolchain:
+    description: 'Rust toolchain to use (e.g., "stable", "nightly", "1.70.0")'
+    required: false
+    default: 'stable'
+  enable-diagnostics:
+    description: 'Enable detailed diagnostic logging'
+    required: false
+    default: 'true'
+
+outputs:
+  rust-version:
+    description: 'Installed Rust version'
+    value: ${{ steps.rust-info.outputs.rust-version }}
+  cargo-version:
+    description: 'Installed Cargo version'
+    value: ${{ steps.rust-info.outputs.cargo-version }}
+  cache-hit:
+    description: 'Whether cache was restored'
+    value: ${{ steps.cargo-cache.outputs.cache-hit }}
+
 runs:
   using: "composite"
   steps:
     - name: Check out
       uses: actions/checkout@v4
 
+    - name: Display system diagnostics
+      if: inputs.enable-diagnostics == 'true'
+      shell: bash
+      run: |
+        echo "::group::System Diagnostics"
+        echo "OS Information:"
+        echo "  Runner OS: ${{ runner.os }}"
+        echo "  Runner Arch: ${{ runner.arch }}"
+        uname -a || echo "uname not available"
+
+        echo ""
+        echo "Environment Variables (filtered):"
+        env | grep -E "(RUST|CARGO|PATH)" | sort || echo "No relevant env vars found"
+
+        echo ""
+        echo "Disk Space:"
+        df -h . || echo "df not available"
+
+        echo ""
+        echo "Available Memory:"
+        free -h 2>/dev/null || vm_stat 2>/dev/null || echo "Memory info not available"
+        echo "::endgroup::"
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ inputs.rust-toolchain }}
+      continue-on-error: false
+
     - name: Set up cargo cache
+      if: inputs.cache-enabled == 'true'
+      id: cargo-cache
       uses: actions/cache@v4
       with:
         path: |
@@ -14,16 +75,64 @@ runs:
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
+          ~/.cargo/.crates.toml
+          ~/.cargo/.crates2.json
           target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ inputs.rust-toolchain }}-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
-          ${{ runner.os }}-cargo-
+          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ inputs.rust-toolchain }}-
+          ${{ runner.os }}-${{ runner.arch }}-cargo-
+      continue-on-error: false
+
+    - name: Report cache status
+      if: inputs.enable-diagnostics == 'true' && inputs.cache-enabled == 'true'
+      shell: bash
+      run: |
+        if [ "${{ steps.cargo-cache.outputs.cache-hit }}" == "true" ]; then
+          echo "::notice::Cache hit! Restored from cache."
+        else
+          echo "::notice::Cache miss. Will build from scratch."
+        fi
 
     - name: Install Protoc
       uses: arduino/setup-protoc@v3
+      with:
+        version: ${{ inputs.protoc-version }}
+        repo-token: ${{ github.token }}
+      continue-on-error: false
 
-    - name: Display Rust version
+    - name: Verify Protoc installation
       shell: bash
       run: |
+        if ! command -v protoc &> /dev/null; then
+          echo "::error::Protoc installation failed"
+          exit 1
+        fi
+        PROTOC_VERSION=$(protoc --version || echo "unknown")
+        echo "::notice::Protoc version: $PROTOC_VERSION"
+
+    - name: Capture Rust and Cargo versions
+      id: rust-info
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        RUST_VERSION=$(rustc --version | cut -d' ' -f2 || echo "unknown")
+        CARGO_VERSION=$(cargo --version | cut -d' ' -f2 || echo "unknown")
+
+        echo "rust-version=$RUST_VERSION" >> $GITHUB_OUTPUT
+        echo "cargo-version=$CARGO_VERSION" >> $GITHUB_OUTPUT
+
         echo "::notice::Rust version: $(rustc --version)"
         echo "::notice::Cargo version: $(cargo --version)"
+
+    - name: Display final environment summary
+      if: inputs.enable-diagnostics == 'true'
+      shell: bash
+      run: |
+        echo "::group::Environment Summary"
+        echo "Rust Version: ${{ steps.rust-info.outputs.rust-version }}"
+        echo "Cargo Version: ${{ steps.rust-info.outputs.cargo-version }}"
+        echo "Protoc Available: $(command -v protoc &> /dev/null && echo 'Yes' || echo 'No')"
+        echo "Cache Status: ${{ steps.cargo-cache.outputs.cache-hit == 'true' && 'Hit' || 'Miss' }}"
+        echo "::endgroup::"

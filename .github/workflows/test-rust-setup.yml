@@ -1,0 +1,154 @@
+name: Test Rust Setup Action
+
+on:
+  pull_request:
+    paths:
+      - '.github/actions/setup-rust/**'
+      - '.github/workflows/test-rust-setup.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Test with default parameters on multiple platforms
+  test-defaults:
+    name: Test defaults on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, macos-latest, windows-latest]
+    steps:
+      - name: Setup Rust environment with defaults
+        uses: ./.github/actions/setup-rust
+
+      - name: Verify environment
+        shell: bash
+        run: |
+          echo "Testing Rust installation..."
+          rustc --version
+          cargo --version
+          protoc --version
+
+          echo "Environment validated successfully!"
+
+  # Test with custom parameters
+  test-custom-params:
+    name: Test custom parameters
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Setup Rust environment with custom params
+        id: setup
+        uses: ./.github/actions/setup-rust
+        with:
+          protoc-version: '25.1'
+          rust-toolchain: 'stable'
+          cache-enabled: 'true'
+          enable-diagnostics: 'true'
+
+      - name: Check outputs
+        shell: bash
+        run: |
+          echo "Rust Version Output: ${{ steps.setup.outputs.rust-version }}"
+          echo "Cargo Version Output: ${{ steps.setup.outputs.cargo-version }}"
+          echo "Cache Hit: ${{ steps.setup.outputs.cache-hit }}"
+
+          # Verify outputs are not empty
+          if [ -z "${{ steps.setup.outputs.rust-version }}" ]; then
+            echo "::error::Rust version output is empty"
+            exit 1
+          fi
+
+          if [ -z "${{ steps.setup.outputs.cargo-version }}" ]; then
+            echo "::error::Cargo version output is empty"
+            exit 1
+          fi
+
+          echo "All outputs validated successfully!"
+
+  # Test caching behavior
+  test-cache:
+    name: Test caching behavior
+    runs-on: ubuntu-22.04
+    steps:
+      - name: First run - should miss cache
+        id: first-run
+        uses: ./.github/actions/setup-rust
+        with:
+          cache-enabled: 'true'
+
+      - name: Create dummy Cargo project
+        shell: bash
+        run: |
+          cargo new test-project
+          cd test-project
+          cargo build
+
+      - name: Second run - should hit cache
+        id: second-run
+        uses: ./.github/actions/setup-rust
+        with:
+          cache-enabled: 'true'
+
+      - name: Verify cache behavior
+        shell: bash
+        run: |
+          echo "First run cache hit: ${{ steps.first-run.outputs.cache-hit }}"
+          echo "Second run cache hit: ${{ steps.second-run.outputs.cache-hit }}"
+
+  # Test with diagnostics disabled
+  test-no-diagnostics:
+    name: Test without diagnostics
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Setup without diagnostics
+        uses: ./.github/actions/setup-rust
+        with:
+          enable-diagnostics: 'false'
+
+      - name: Verify it still works
+        shell: bash
+        run: |
+          rustc --version
+          cargo --version
+          echo "Setup successful without diagnostics!"
+
+  # Test with different Rust toolchains
+  test-toolchains:
+    name: Test with ${{ matrix.toolchain }} toolchain
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        toolchain: ['stable', 'nightly']
+    steps:
+      - name: Setup Rust with ${{ matrix.toolchain }}
+        id: setup
+        uses: ./.github/actions/setup-rust
+        with:
+          rust-toolchain: ${{ matrix.toolchain }}
+
+      - name: Verify toolchain
+        shell: bash
+        run: |
+          rustc --version
+          echo "Rust version: ${{ steps.setup.outputs.rust-version }}"
+
+  # Test actual Rust project build
+  test-real-build:
+    name: Test with real project
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        directory: ["./listen-legacy", "./listen-kit"]
+    steps:
+      - name: Setup Rust environment
+        uses: ./.github/actions/setup-rust
+        with:
+          cache-enabled: 'true'
+          enable-diagnostics: 'true'
+
+      - name: Build project
+        working-directory: ${{ matrix.directory }}
+        run: |
+          echo "Building ${{ matrix.directory }}..."
+          cargo build
