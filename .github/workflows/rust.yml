@@ -4,78 +4,58 @@ on:
   push:
   pull_request:
 
-# Cancel in-progress workflows on branches, expect main.
+# Restrict GITHUB_TOKEN permissions to read-only access for security
+permissions:
+  contents: read
+
+# Cancel in-progress workflows on branches, except main.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ !contains(github.ref, 'main')}}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
-# TODO: Consider using composite actions to setup code duplication for each job
+# Composite action is used to reduce code duplication
 # https://docs.github.com/en/actions/sharing-automations/creating-actions/creating-a-composite-action
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         directory: ["./listen-legacy", "./listen-kit"]
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
-      - name: Set up cargo cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
+      - name: Setup Rust environment
+        uses: ./.github/actions/setup-rust
       - name: Lint
         working-directory: ${{ matrix.directory }}
-        run: cargo clippy
+        run: |
+          echo "::group::Running clippy in ${{ matrix.directory }}"
+          cargo clippy
+          echo "::endgroup::"
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         directory: ["./listen-legacy", "./listen-kit"]
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
-      - name: Set up cargo cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
+      - name: Setup Rust environment
+        uses: ./.github/actions/setup-rust
       - name: Build
         working-directory: ${{ matrix.directory }}
-        run: cargo build
+        run: |
+          echo "::group::Building ${{ matrix.directory }}"
+          cargo build
+          echo "::endgroup::"
 
-  # Uncomment when tests are stable
-  # test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Check out
-  #     uses: actions/checkout@v4
-  #   - name: Set up cargo cache
-  #     uses: actions/cache@v4
-  #     with:
-  #       path: |
-  #         ~/.cargo/bin/
-  #         ~/.cargo/registry/index/
-  #         ~/.cargo/registry/cache/
-  #         ~/.cargo/git/db/
-  #         target/
-  #       key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-  #   - name: Install Protoc
-  #     uses: arduino/setup-protoc@v3
-  #   - name: Run tests
-  #     run: cargo test --lib
+  test:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        directory: ["./listen-legacy", "./listen-kit"]
+    steps:
+      - name: Setup Rust environment
+        uses: ./.github/actions/setup-rust
+      - name: Run tests
+        working-directory: ${{ matrix.directory }}
+        run: |
+          echo "::group::Running tests in ${{ matrix.directory }}"
+          cargo test --lib
+          echo "::endgroup::"
