@@ -3,7 +3,7 @@ description: 'Sets up Rust development environment with checkout, caching, and P
 inputs:
   github-token:
     description: 'GitHub token for setup-protoc'
-    required: false
+    required: true
 runs:
   using: 'composite'
   steps:
