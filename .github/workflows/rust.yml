@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Setup Rust environment
         uses: ./.github/actions/rust-setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Lint
         working-directory: ${{ matrix.directory }}
@@ -32,6 +34,8 @@ jobs:
     steps:
       - name: Setup Rust environment
         uses: ./.github/actions/rust-setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build
         working-directory: ${{ matrix.directory }}
@@ -47,6 +51,8 @@ jobs:
     steps:
       - name: Setup Rust environment
         uses: ./.github/actions/rust-setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Run tests
         working-directory: ${{ matrix.directory }}

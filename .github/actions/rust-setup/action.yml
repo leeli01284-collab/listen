@@ -1,5 +1,9 @@
 name: 'Rust Setup'
 description: 'Sets up Rust development environment with checkout, caching, and Protoc installation'
+inputs:
+  github-token:
+    description: 'GitHub token for setup-protoc'
+    required: false
 runs:
   using: 'composite'
   steps:
@@ -22,7 +26,7 @@ runs:
     - name: Install Protoc
       uses: arduino/setup-protoc@v3
       with:
-        repo-token: ${{ github.token }}
+        repo-token: ${{ inputs.github-token }}
     
     - name: Log environment setup
       shell: bash
