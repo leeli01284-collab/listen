@@ -16,6 +16,7 @@ jobs:
   lint:
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         directory: ["./listen-legacy", "./listen-kit"]
     steps:
@@ -28,10 +29,12 @@ jobs:
         working-directory: ${{ matrix.directory }}
         run: |
           echo "::notice::Running clippy in ${{ matrix.directory }}"
-          cargo clippy
+          cargo clippy --all-targets --all-features -- -D warnings
+  
   build:
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         directory: ["./listen-legacy", "./listen-kit"]
     steps:
@@ -44,11 +47,13 @@ jobs:
         working-directory: ${{ matrix.directory }}
         run: |
           echo "::notice::Building project in ${{ matrix.directory }}"
-          cargo build
+          cargo build --verbose
 
   test:
     runs-on: ubuntu-22.04
+    needs: build
     strategy:
+      fail-fast: false
       matrix:
         directory: ["./listen-legacy", "./listen-kit"]
     steps:
@@ -61,4 +66,4 @@ jobs:
         working-directory: ${{ matrix.directory }}
         run: |
           echo "::notice::Running tests in ${{ matrix.directory }}"
-          cargo test --lib
+          cargo test --lib --verbose
