@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+# Restrict GITHUB_TOKEN permissions to read-only access for security
+permissions:
+  contents: read
+
 # Cancel in-progress workflows on branches, except main.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
