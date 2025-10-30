@@ -2,22 +2,39 @@ name: Proposals
 description: Have an idea? Share it here!
 labels: ["proposal"]
 body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Select the category that best describes your proposal. This helps us organize and prioritize submissions.
+      options:
+        - Feature Request
+        - Process Improvement
+        - Other
+    validations:
+      required: false
   - type: textarea
     id: problem
     attributes:
       label: Problem
-      description: A description of the problem you are facing.
+      description: Clearly describe the problem or pain point you're experiencing. What is the current situation, and why is it problematic? Include specific examples if possible.
+      placeholder: |
+        Example: "Currently, users have to manually configure each blockchain network connection, which is time-consuming and error-prone. This creates friction for new users trying to get started with the platform."
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
       label: Proposal
-      description: A description of how you want to solve the problem.
+      description: Explain your proposed solution in detail. How would this address the problem? What would the implementation look like from a user's perspective? Be as specific as possible about the desired outcome.
+      placeholder: |
+        Example: "Add a 'Quick Connect' feature that auto-detects and configures common network settings. Users would see a dropdown of popular networks (Mainnet, Devnet, etc.) and could connect with a single click. The system would handle all configuration automatically."
     validations:
       required: true
   - type: textarea
     id: notes
     attributes:
       label: Additional Notes
-      description: Any other notes or screenshots about your proposal.
+      description: Provide any supplementary information that would help us understand your proposal better. This could include relevant links to documentation, similar implementations in other projects, screenshots, mockups, technical considerations, or potential challenges.
+      placeholder: |
+        Example: "Here's a similar feature from another project: [link]. I've attached a mockup showing how this could look in the UI. One potential challenge is handling custom RPC endpoints while keeping the interface simple."
