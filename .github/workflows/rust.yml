@@ -4,78 +4,52 @@ on:
   push:
   pull_request:
 
-# Cancel in-progress workflows on branches, expect main.
+# Cancel in-progress workflows on branches, except main.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ !contains(github.ref, 'main')}}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
-# TODO: Consider using composite actions to setup code duplication for each job
-# https://docs.github.com/en/actions/sharing-automations/creating-actions/creating-a-composite-action
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         directory: ["./listen-legacy", "./listen-kit"]
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
-      - name: Set up cargo cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
+      - name: Setup Rust environment
+        uses: ./.github/actions/rust-setup
+      
       - name: Lint
         working-directory: ${{ matrix.directory }}
-        run: cargo clippy
+        run: |
+          echo "::notice::Running clippy in ${{ matrix.directory }}"
+          cargo clippy
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         directory: ["./listen-legacy", "./listen-kit"]
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
-      - name: Set up cargo cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
+      - name: Setup Rust environment
+        uses: ./.github/actions/rust-setup
+      
       - name: Build
         working-directory: ${{ matrix.directory }}
-        run: cargo build
+        run: |
+          echo "::notice::Building project in ${{ matrix.directory }}"
+          cargo build
 
-  # Uncomment when tests are stable
-  # test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - name: Check out
-  #     uses: actions/checkout@v4
-  #   - name: Set up cargo cache
-  #     uses: actions/cache@v4
-  #     with:
-  #       path: |
-  #         ~/.cargo/bin/
-  #         ~/.cargo/registry/index/
-  #         ~/.cargo/registry/cache/
-  #         ~/.cargo/git/db/
-  #         target/
-  #       key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-  #   - name: Install Protoc
-  #     uses: arduino/setup-protoc@v3
-  #   - name: Run tests
-  #     run: cargo test --lib
+  test:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        directory: ["./listen-legacy", "./listen-kit"]
+    steps:
+      - name: Setup Rust environment
+        uses: ./.github/actions/rust-setup
+      
+      - name: Run tests
+        working-directory: ${{ matrix.directory }}
+        run: |
+          echo "::notice::Running tests in ${{ matrix.directory }}"
+          cargo test --lib

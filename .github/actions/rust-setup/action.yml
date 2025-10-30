@@ -1,0 +1,33 @@
+name: 'Rust Setup'
+description: 'Sets up Rust development environment with checkout, caching, and Protoc installation'
+runs:
+  using: 'composite'
+  steps:
+    - name: Check out
+      uses: actions/checkout@v4
+    
+    - name: Set up cargo cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    
+    - name: Install Protoc
+      uses: arduino/setup-protoc@v3
+      with:
+        repo-token: ${{ github.token }}
+    
+    - name: Log environment setup
+      shell: bash
+      run: |
+        echo "::notice::Rust setup complete"
+        echo "Rust version: $(rustc --version)"
+        echo "Cargo version: $(cargo --version)"
+        echo "Protoc version: $(protoc --version)"
