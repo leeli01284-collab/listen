@@ -41,3 +41,12 @@ resend-rs = "0.12.0"
 [[bin]]
 name = "engine"
 path = "bin/engine.rs"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[profile.dev]
+incremental = true

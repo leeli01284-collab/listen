@@ -34,3 +34,12 @@ reqwest = { version = "0.12.15", features = ["json"] }
 [[bin]]
 name = "adapter"
 path = "bin/adapter.rs"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[profile.dev]
+incremental = true

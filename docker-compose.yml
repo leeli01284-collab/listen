@@ -19,6 +19,11 @@ services:
         condition: service_healthy
       clickhouse:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: "2G"
 
   adapter:
     image: listen-adapter
@@ -34,6 +39,11 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: "512M"
 
   redis:
     build:
@@ -52,7 +62,9 @@ services:
       nofile:
         soft: 65536
         hard: 65536
-    command: redis-server /usr/local/etc/redis/redis.conf --save "" --appendonly no
+    # Redis configured for performance: no persistence, 1GB max memory with LRU eviction
+    # For production, consider moving to a redis.conf file for better maintainability
+    command: redis-server /usr/local/etc/redis/redis.conf --save "" --appendonly no --maxmemory 1gb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

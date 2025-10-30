@@ -128,12 +128,26 @@ private key and 32 bytes public key.
 # Install dependencies
 sudo apt install protoc build-essential pkg-config libssl-dev
 
-# Build
+# Using the Makefile (recommended)
+make build          # Build all projects
+make test           # Run tests
+make lint           # Run linters
+make docker-up      # Start services with Docker
+
+# Or manually build
 cargo build --release
 
 # Run services
 ./run-systemd-services.sh
 ```
+
+## Developer Tools
+
+This repository includes several tools to improve developer experience:
+
+- **Makefile**: Unified commands for build, test, and lint operations. Run `make help` for all available commands.
+- **Node.js Version**: We use Node.js 20.19.5 (see `.nvmrc`). Use `nvm use` for automatic version selection.
+- **Optimization Docs**: See `OPTIMIZATION_ANALYSIS.md` for detailed performance improvement opportunities and `QUICK_WINS.md` for quick optimizations.
 
 ## Usage Examples
 
